@@ -7,24 +7,19 @@
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
+import glob
 
 def main():
     # Convert first five days of 2021 into individual dataframes for training data
     df_train = pd.DataFrame()
-    df_train = pd.concat([df_train, fetchData('data/01-01-2021.txt')])
-    df_train = pd.concat([df_train, fetchData('data/01-02-2021.txt')])
-    df_train = pd.concat([df_train, fetchData('data/01-03-2021.txt')])
-    df_train = pd.concat([df_train, fetchData('data/01-04-2021.txt')])
-    df_train = pd.concat([df_train, fetchData('data/01-05-2021.txt')])
-    df_train = pd.concat([df_train, fetchData('data/01-06-2021.txt')])
-    df_train = pd.concat([df_train, fetchData('data/01-07-2021.txt')])
-    df_train = pd.concat([df_train, fetchData('data/01-08-2021.txt')])
-    df_train = pd.concat([df_train, fetchData('data/01-09-2021.txt')])
-
-
-    print(df_train)
+    all_files = glob.glob('data/*.csv')
+    for file in all_files:
+        df_train = pd.concat([df_train, fetchData(file)])
     # Convert next five days of 2021 into individual dataframes for testing data
-    df_test = fetchData('data/01-10-2021.txt')
+    df_test = fetchData('01-03-2021.csv')
+
+    # Output State Data to a csv
+    df_train.to_csv('alaska_data.csv')
 
     # Get training and testing info
     X_train = df_train.drop(columns=['Confirmed'])
@@ -36,6 +31,7 @@ def main():
     reg = LinearRegression()
     reg.fit(X_train, y_train)
     preds = reg.predict(X_test)
+    print("Linear Regression Confirmed Cases Prediction: " + str(preds))
     dist = np.linalg.norm(preds-y_test)
     print("Linear Regression Prediction Precision: " + str(dist))
 
@@ -48,17 +44,14 @@ def fetchData(url):
     # Read csv into pandas dataframe
     df = pd.read_csv(url, index_col=0)
 
-    # Drop all columns that contain only NaNs
-    df = df.dropna(axis=1, how='all')
-
-    # Dropping rows that still contain NaNs (Cruise Ships and American Samoa)
-    df = df.dropna(axis=0)
-
-    # Get just Alaska
-    df = df.loc[['Alaska']]
-
     # Drop redundant and non-numerical rows
-    df = df.drop(columns=['Lat', 'Long_', 'UID', 'FIPS', 'Country_Region', 'Last_Update', 'ISO3', 'Date'])
+    df = df.drop(columns=['Lat', 'Long_', 'UID', 'FIPS', 'Country_Region', 'Last_Update', 'ISO3', 'Date', 'Recovered', 'Active', 'People_Hospitalized', 'Hospitalization_Rate', 'People_Tested', 'Mortality_Rate'])
+
+    # Get Alaska only
+    try:
+        df = df.loc[['Alaska']]
+    except:
+        df = pd.DataFrame()
 
     # Return dataframe
     return df
