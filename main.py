@@ -9,17 +9,21 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 import glob
 
-def main():
-    # Convert first five days of 2021 into individual dataframes for training data
+
+state_names = ["California"]
+
+
+def main(state):
+    # Convert first X days of 2021 into individual dataframes for training data
     df_train = pd.DataFrame()
     all_files = glob.glob('data/*.csv')
     for file in all_files:
-        df_train = pd.concat([df_train, fetchData(file)])
-    # Convert next five days of 2021 into individual dataframes for testing data
-    df_test = fetchData('01-03-2021.csv')
+        df_train = pd.concat([df_train, fetchData(state, file)])
+    # Convert next day of 2021 into individual dataframes for testing data
+    df_test = fetchData(state, '03-29-2021.csv')
 
     # Output State Data to a csv
-    df_train.to_csv('alaska_data.csv')
+    df_train.to_csv(state + '_data.csv')
 
     # Get training and testing info
     X_train = df_train.drop(columns=['Confirmed'])
@@ -31,6 +35,7 @@ def main():
     reg = LinearRegression()
     reg.fit(X_train, y_train)
     preds = reg.predict(X_test)
+    print("State: " + state)
     print("Linear Regression Confirmed Cases Prediction: " + str(preds))
     dist = np.linalg.norm(preds-y_test)
     print("Linear Regression Prediction Precision: " + str(dist))
@@ -40,7 +45,7 @@ def fetchHeaders(url):
     df = df.iloc[[0]]
 
 
-def fetchData(url):
+def fetchData(state, url):
     # Read csv into pandas dataframe
     df = pd.read_csv(url, index_col=0)
 
@@ -49,7 +54,7 @@ def fetchData(url):
 
     # Get Alaska only
     try:
-        df = df.loc[['Alaska']]
+        df = df.loc[[state]]
     except:
         df = pd.DataFrame()
 
@@ -57,4 +62,5 @@ def fetchData(url):
     return df
 
 if __name__ == '__main__':
-    main()
+    for state in state_names:
+        main(state)  
